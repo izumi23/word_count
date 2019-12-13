@@ -44,12 +44,11 @@ void line_count (int argc, char **argv) {
 
 
 
-void word_count (int argc, char **argv) {
+void word_count (int argc, char **argv, int debut) {
   int i, count, f;
   int sep;
   char c;
   int total = 0;
-  int debut = argv[1][0]=='-'? 2: 1;
   for (i=debut; i<argc; i++) {
     count = 0;
     sep = 1;
@@ -72,10 +71,9 @@ int main (int argc, char **argv) {
     char opt = argv[1][1];
     if (opt == 'c') char_count(argc, argv);
     else if (opt == 'l') line_count(argc, argv);
-    else if (opt == 'w') word_count(argc, argv);
-    else puts("Donner une option -w, -l ou -c");
+    else word_count(argc, argv, 2);
   }
-  else word_count(argc, argv);
+  else word_count(argc, argv, 1);
   return 0;
 }
 
