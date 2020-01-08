@@ -1,11 +1,20 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <sys/types.h>
+#include <fcntl.h>
 #include "line_count.h"
 #include "word_count.h"
 
 
+
 int char_count (char *file) {
   int f = open(file, O_RDONLY);
-  return lseek(f, 0, SEEK_END);
+  if (f == -1) perror("open");
+  int size = lseek(f, 0, SEEK_END);
+  if (size == -1) perror("lseek");
+  return size;
 }
 
 

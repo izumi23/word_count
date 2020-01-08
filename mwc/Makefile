@@ -11,7 +11,7 @@ bin: mwc
 
 %.c: %.h
 
-mwc: main.c
+mwc: main.c line_count.c word_count.c
 	$(CC) -O3 -o $@ -pthread $^
 
 .PHONY: tests
