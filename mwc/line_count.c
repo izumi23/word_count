@@ -11,30 +11,32 @@ typedef struct {
   char *file;
   int start;
   int end;
-} line_file_section;
+} file_section;
 
 
 
-int line_total = 0;
-pthread_mutex_t line_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int total = 0;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 
-void *line_count_thread (void *args) {
+static void *line_count_thread (void *args) {
   int i;
   char c;
   int count = 0;
-  line_file_section *s = args;
+  file_section *s = args;
   int f = open(s->file, O_RDONLY);
   if (f == -1) perror("open");
-  lseek(f, s->start, SEEK_SET);
+  if (lseek(f, s->start, SEEK_SET) == -1) perror("lseek");
+
   for (i = s->start; i < s->end; i++) {
     if (read(f, &c, 1) == -1) perror("read");
     if (c == '\n') count++;
   }
-  pthread_mutex_lock(&line_mutex);
-  line_total += count;
-  pthread_mutex_unlock(&line_mutex);
+
+  pthread_mutex_lock(&mutex);
+  total += count;
+  pthread_mutex_unlock(&mutex);
   pthread_exit(NULL);
 }
 
@@ -51,13 +53,14 @@ int line_count (char *file) {
 
   for (i=0; i<4; i++) {
     int res;
-    line_file_section *s = malloc(sizeof(line_file_section));
+    file_section *s = malloc(sizeof(file_section));
     s->file = file;
     s->start = i*frac_size;
     s->end = i==3? size: (i+1)*frac_size;
-    pthread_create(&t[i], NULL, line_count_thread, s);
+    if (pthread_create(&t[i], NULL, line_count_thread, s))
+      perror("pthread_create");
   }
 
   for (i=0; i<4; i++) pthread_join(t[i], NULL);
-  return line_total;
+  return total;
 }

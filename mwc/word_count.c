@@ -16,14 +16,14 @@ typedef struct {
 
 
 
-int total = 0;
-int first[4];    //0 si le premier caractère est une séparation, 1 sinon
-int last[4];
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+static int total = 0;
+static int first[4];    //0 si le premier caractère est une séparation, 1 sinon
+static int last[4];
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 
-void *word_count_thread (void *args) {
+static void *word_count_thread (void *args) {
   int i;
   char c;
   int count = 0;
@@ -64,7 +64,8 @@ int word_count (char *file) {
     s->rank = i;
     s->start = i*frac_size;
     s->end = i==3? size: (i+1)*frac_size;
-    if (pthread_create(&t[i], NULL, word_count_thread, s)) perror("pthread_create");
+    if (pthread_create(&t[i], NULL, word_count_thread, s))
+      perror("pthread_create");
   }
 
   for (i=0; i<4; i++) if (pthread_join(t[i], NULL)) perror("pthread_join");
