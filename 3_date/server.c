@@ -49,42 +49,89 @@ int wait_for_client (int socket) {
 
 
 
+int get_date (int sock, char *date) {
+
+  int p[2];
+  pipe(p);
+
+  if (!fork()) {
+    dup2(p[1], 1);
+    close(p[0]);
+    execlp("date", "date", "--rfc-3339=seconds", NULL);
+  }
+
+  else {
+    close(p[1]);
+    read(p[0], date, 25);
+    close(p[0]);
+    return 0;
+  }
+}
+
+
+
+
+
 int main (int argc, char **argv) {
 
   char c;
   char date[26];
   date[25] = '\0';
+  int n = 2;    //number of connections
+  signal(SIGPIPE, SIG_IGN);
 
   fd_set readfds;
   int port = 4004;
   int socket = get_server_socket(port);
-  int csock = wait_for_client(socket);
+
+  int csock[n];
+  int connected[n];
+  int i;
+  for (i=0; i<n; i++) connected[i] = 0;
+  csock[0] = wait_for_client(socket);
+  connected[0] = 1;
+  puts("Socket 0: connecté");
 
 
   while (1) {
 
     FD_ZERO(&readfds);
-    FD_SET(csock, &readfds);
+    FD_SET(socket, &readfds);
+    for (i=0; i<n; i++) if (connected[i]) FD_SET(csock[i], &readfds);
 
     if (select(MAXFILES, &readfds, NULL, NULL, NULL) < 0) perror("select");
 
-    if (FD_ISSET(csock, &readfds)) {
 
-      read(csock, &c, 1);
-
-      int p[2];
-      pipe(p);
-      if (!fork()) {
-        dup2(p[1], 1);
-        close(p[0]);
-        execlp("date", "date", "--rfc-3339=seconds", NULL);
+    if (FD_ISSET(socket, &readfds)) {
+      int success = 0;
+      for (i=0; i<n; i++) {
+        if (!success && !connected[i]) {
+          csock[i] = wait_for_client(socket);
+          success = 1;
+          connected[i] = 1;
+          printf("Socket %d: connecté\n", i);
+        }
       }
+      if (!success) {
+        printf(
+        "Echec d'une nouvelle connexion: serveur limité à %d connexions\n", n);
+        close(wait_for_client(socket));
+      }
+    }
 
-      else {
-        close(p[1]);
-        read(p[0], date, 25);
-        close(p[0]);
-        write(csock, date, 26);
+
+    for (i=0; i<n; i++) if (connected[i]) {
+
+      if (FD_ISSET(csock[i], &readfds)) {
+
+        if (read(csock[i], &c, 1) == -1) perror("read");
+        get_date(csock[i], date);
+
+        if (write(csock[i], date, 26) == -1) {
+          close(csock[i]);
+          connected[i] = 0;
+          printf("Socket %d: déconnecté\n", i);
+        }
       }
     }
   }

@@ -52,7 +52,7 @@ int main () {
   int socket = connect_to_server(server, port);
 
 
-  for (i=0; i<5; i++) {
+  for (i=0; i<10; i++) {
 
     sleep(1);
 
@@ -64,8 +64,12 @@ int main () {
     if (select(MAXFILES, &readfds, NULL, NULL, NULL) < 0) perror("select");
 
     if (FD_ISSET(socket, &readfds)) {
-      read(socket, date, 26);
-      printf("server said: %s\n", date);
+      if (read(socket, date, 26) > 0)
+        printf("(%d)  D'après le serveur, la date est: %s\n", i, date);
+      else {
+        puts("Connexion échouée (trop de connexions sur le serveur?)");
+        return 0;
+      }
     }
   }
 
