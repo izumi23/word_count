@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <ulimit.h>
 #include <time.h>
+#include <fcntl.h>
 
 #define MAXFILES (ulimit(4))
 
@@ -50,9 +51,11 @@ int wait_for_client (int socket) {
 
 int main (int argc, char **argv) {
 
-  char date[256] = "bonjour";
-  fd_set readfds;
+  char c;
+  char date[26];
+  date[25] = '\0';
 
+  fd_set readfds;
   int port = 4004;
   int socket = get_server_socket(port);
   int csock = wait_for_client(socket);
@@ -60,19 +63,30 @@ int main (int argc, char **argv) {
 
   while (1) {
 
-    int p[2];
-    pipe(p);
-
     FD_ZERO(&readfds);
     FD_SET(csock, &readfds);
 
     if (select(MAXFILES, &readfds, NULL, NULL, NULL) < 0) perror("select");
 
-    if (FD_ISSET(csock, &readfds))
-      {
-        read(csock, NULL, 1);
-        write(csock, date, 256);
+    if (FD_ISSET(csock, &readfds)) {
+
+      read(csock, &c, 1);
+
+      int p[2];
+      pipe(p);
+      if (!fork()) {
+        dup2(p[1], 1);
+        close(p[0]);
+        execlp("date", "date", "--rfc-3339=seconds", NULL);
       }
+
+      else {
+        close(p[1]);
+        read(p[0], date, 25);
+        close(p[0]);
+        write(csock, date, 26);
+      }
+    }
   }
 
   return 0;

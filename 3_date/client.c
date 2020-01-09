@@ -20,7 +20,6 @@ int connect_to_server (char *hostname, int port) {
   int s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
   if (s < 0) perror("socket");
 
-
   struct hostent *host_address = gethostbyname(hostname);
   if (!host_address) perror("gethostbyname");
 
@@ -43,15 +42,19 @@ int connect_to_server (char *hostname, int port) {
 
 int main () {
 
-  fd_set readfds;
   char msg = 'd';
-  char date[256];
-  char *server = "localhost";
-  int port = 4004;
-  int socket = connect_to_server(server,port);
+  char date[26];
   int i;
 
-  for (i=0; i<50; i++) {
+  fd_set readfds;
+  char *server = "localhost";
+  int port = 4004;
+  int socket = connect_to_server(server, port);
+
+
+  for (i=0; i<5; i++) {
+
+    sleep(1);
 
     FD_ZERO(&readfds);
     FD_SET(socket, &readfds);
@@ -60,11 +63,10 @@ int main () {
 
     if (select(MAXFILES, &readfds, NULL, NULL, NULL) < 0) perror("select");
 
-    if (FD_ISSET(socket, &readfds))
-      {
-        read(socket, date, 256);
-        printf("server said: %s\n", date);
-      }
+    if (FD_ISSET(socket, &readfds)) {
+      read(socket, date, 26);
+      printf("server said: %s\n", date);
+    }
   }
 
   return 0;
