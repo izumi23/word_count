@@ -7,8 +7,7 @@
 #include <sys/select.h>
 #include <netinet/in.h>
 #include <ulimit.h>
-#include <time.h>
-#include <fcntl.h>
+
 
 #define MAXFILES (ulimit(4))
 
@@ -88,6 +87,8 @@ int main (int argc, char **argv) {
   int connected[n];
   int i;
   for (i=0; i<n; i++) connected[i] = 0;
+
+  puts("En attente d'un client...");
   csock[0] = wait_for_client(socket);
   connected[0] = 1;
   puts("Socket 0: connecté");
